@@ -5,30 +5,28 @@
  * board fills (tie)
  */
 
-// TODO Initially, we’ll start with one class, Game. The players will still just be numbers for player #1 and #2.
-// ? What are the instance variables you’ll need on the Game? for example: height, width, and the board will move from global variables to instance attributes on the class. What else should move?
-// ? Make a constructor that sets default values for these
-// ?Move the current functions onto the class as methods. This will require mildly rewriting some of these to change how you access variables and call other methods
-//? You should end up with all of the code being in the Game class, with the only other code being a single line at the bottom:
-
 class Game {
-  constructor() {
-    // TODO set default values for these
+  constructor(p1, p2, height = 6, width = 7) {
+    // ? WHY ARE THESE the variables?? set default values
+    this.players = [p1, p2];
     this.width = width;
     this.height = height;
-    this.board = []; // array of rows, each row is array of cells  (board[y][x])
+    this.currPlayer = p1;
+    this.makeBoard();
+    this.makeHtmlBoard;
+    this.gameOver = false;
+    // ? why are we not defining this.board?
+    // ? this.board = []; // array of rows, each row is array of cells  (board[y][x])
   } // ! constructor END
 
-  // TODO add functions as methods
-  // TODO This will require mildly rewriting some of these to change how you access variables and call other methods
-
-  /**
-   * makeBoard: create in-JS board structure:
-   * board = array of rows, each row is array of cells  (board[y][x])
+  /*
+    makeBoard: create in-JS board structure:
+    board = array of rows, each row is array of cells  (board[y][x])
    */
   makeBoard() {
-    for (let y = 0; y < HEIGHT; y++) {
-      board.push(Array.from({ length: WIDTH }));
+    this.board = [];
+    for (let y = 0; y < this.height; y++) {
+      this.board.push(Array.from({ length: this.width }));
     }
   } // ! makeBoard END
 
@@ -37,13 +35,21 @@ class Game {
    */
   makeHtmlBoard() {
     const board = document.getElementById("board");
+    // ? why
+    board.innerHTML = "";
 
     // make column tops (clickable area for adding a piece to that column)
     const top = document.createElement("tr");
     top.setAttribute("id", "column-top");
-    top.addEventListener("click", handleClick);
 
-    for (let x = 0; x < WIDTH; x++) {
+    // store a ref to the handClick bound fn
+    // we always want this method to refer to this obj
+    // ? so that we can remove the event listener correctly later
+    this.handleGameClick = this.handleClick.bind(this);
+
+    top.addEventListener("click", this.handleGameClick); // obj method
+
+    for (let x = 0; x < this.width; x++) {
       const headCell = document.createElement("td");
       headCell.setAttribute("id", x);
       top.append(headCell);
@@ -52,10 +58,10 @@ class Game {
     board.append(top);
 
     // make main part of board
-    for (let y = 0; y < HEIGHT; y++) {
+    for (let y = 0; y < this.height; y++) {
       const row = document.createElement("tr");
 
-      for (let x = 0; x < WIDTH; x++) {
+      for (let x = 0; x < this.width; x++) {
         const cell = document.createElement("td");
         cell.setAttribute("id", `${y}-${x}`);
         row.append(cell);
@@ -69,8 +75,9 @@ class Game {
    * findSpotForCol: given column x, return top empty y (null if filled)
    */
   findSpotForCol(x) {
-    for (let y = HEIGHT - 1; y >= 0; y--) {
-      if (!board[y][x]) {
+    for (let y = this.height - 1; y >= 0; y--) {
+      // ? which board is this referring to? makeBoard() or makeHtmlBoard()
+      if (!this.board[y][x]) {
         return y;
       }
     }
@@ -83,7 +90,7 @@ class Game {
   placeInTable(y, x) {
     const piece = document.createElement("div");
     piece.classList.add("piece");
-    piece.classList.add(`p${currPlayer}`);
+    piece.classList.add(`p${this.currPlayer}`);
     piece.style.top = -50 * (y + 2);
 
     const spot = document.getElementById(`${y}-${x}`);
@@ -95,6 +102,9 @@ class Game {
    */
   endGame(msg) {
     alert(msg);
+    // remove event listener at game end
+    const top = document.querySelector("#column-top");
+    top.removeEventListener("click", this.handleGameClick);
   } // ! endGame END
 
   /**
@@ -105,27 +115,29 @@ class Game {
     const x = +evt.target.id;
 
     // get next spot in column (if none, ignore click)
-    const y = findSpotForCol(x);
+    const y = this.findSpotForCol(x);
     if (y === null) {
       return;
     }
 
     // place piece in board and add to HTML table
-    board[y][x] = currPlayer;
-    placeInTable(y, x);
+    this.board[y][x] = this.currPlayer;
+    this.placeInTable(y, x);
 
+    // TODO
     // check for win
-    if (checkForWin()) {
-      return endGame(`Player ${currPlayer} won!`);
+    if (this.checkForWin()) {
+      this.gameOver = true;
+      return this.endGame(`Player ${this.currPlayer} won!`);
     }
 
     // check for tie
-    if (board.every((row) => row.every((cell) => cell))) {
-      return endGame("Tie!");
+    if (this.board.every((row) => row.every((cell) => cell))) {
+      return this.endGame("Tie!");
     }
 
     // switch players
-    currPlayer = currPlayer === 1 ? 2 : 1;
+    this.currPlayer = this.players[0] ? this.players[1] : this.players[0];
   } // ! handleClick END
 
   /**
@@ -140,15 +152,15 @@ class Game {
       return cells.every(
         ([y, x]) =>
           y >= 0 &&
-          y < HEIGHT &&
+          y < this.height &&
           x >= 0 &&
-          x < WIDTH &&
-          board[y][x] === currPlayer
+          x < this.width &&
+          this.board[y][x] === this.currPlayer
       );
     }
 
-    for (let y = 0; y < HEIGHT; y++) {
-      for (let x = 0; x < WIDTH; x++) {
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
         // get "check list" of 4 cells (starting here) for each of the different
         // ways to win
         const horiz = [
@@ -185,11 +197,25 @@ class Game {
   } // ! checkForWin END
 } // ! class END
 
+class Player {
+  constructor(color) {
+    this.color = color;
+  }
+}
+
+document.getElementById("start-game").addEventListener("click", () => {
+  let p1 = new Player(document.getElementById("p1-color").value);
+  let p2 = new Player(document.getElementById("p2-color").value);
+  new Game(p1, p2);
+});
+
+new Game(6, 7); // assuming constructor takes height, width
+
 // variable moved into constructor
 //// const WIDTH = 7;
 //// const HEIGHT = 6;
 
-let currPlayer = 1; // active player: 1 or 2
+//let currPlayer = 1; // active player: 1 or 2
 //// let board = []; // array of rows, each row is array of cells  (board[y][x])
 
 // fn moved into class
@@ -340,5 +366,5 @@ let currPlayer = 1; // active player: 1 or 2
 //   }
 // }
 
-makeBoard();
-makeHtmlBoard();
+// makeBoard();
+// makeHtmlBoard();
