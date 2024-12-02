@@ -9,11 +9,11 @@ class Game {
   constructor(p1, p2, height = 6, width = 7) {
     // ? WHY ARE THESE the variables?? set default values
     this.players = [p1, p2];
-    this.width = width;
     this.height = height;
+    this.width = width;
     this.currPlayer = p1;
     this.makeBoard();
-    this.makeHtmlBoard;
+    this.makeHtmlBoard();
     this.gameOver = false;
     // ? why are we not defining this.board?
     // ? this.board = []; // array of rows, each row is array of cells  (board[y][x])
@@ -90,7 +90,10 @@ class Game {
   placeInTable(y, x) {
     const piece = document.createElement("div");
     piece.classList.add("piece");
-    piece.classList.add(`p${this.currPlayer}`);
+    console.log(`current player: ${this.currPlayer.color}`);
+    console.log("height", this.height);
+
+    piece.classList.add(`${this.currPlayer.color}`);
     piece.style.top = -50 * (y + 2);
 
     const spot = document.getElementById(`${y}-${x}`);
@@ -116,46 +119,51 @@ class Game {
 
     // get next spot in column (if none, ignore click)
     const y = this.findSpotForCol(x);
+    console.log("x and y:", y, x);
+
     if (y === null) {
       return;
     }
 
     // place piece in board and add to HTML table
     this.board[y][x] = this.currPlayer;
-    this.placeInTable(y, x);
-
-    // TODO
-    // check for win
-    if (this.checkForWin()) {
-      this.gameOver = true;
-      return this.endGame(`Player ${this.currPlayer} won!`);
-    }
+    this.placeInTable(y, x); // todo
 
     // check for tie
     if (this.board.every((row) => row.every((cell) => cell))) {
       return this.endGame("Tie!");
     }
 
+    // check for win
+    if (this.checkForWin()) {
+      this.gameOver = true;
+      return this.endGame(`Player ${this.currPlayer.color} won!`);
+    }
+
     // switch players
-    this.currPlayer = this.players[0] ? this.players[1] : this.players[0];
+    this.currPlayer =
+      this.currPlayer === this.players[0] ? this.players[1] : this.players[0];
   } // ! handleClick END
 
   /**
    * checkForWin: check board cell-by-cell for "does a win start here?"
    */
   checkForWin() {
+    const that = this;
+
     function _win(cells) {
       // Check four cells to see if they're all color of current player
       //  - cells: list of four (y, x) cells
       //  - returns true if all are legal coordinates & all match currPlayer
+      // console.log(`height: ${this.height}`);
 
       return cells.every(
         ([y, x]) =>
           y >= 0 &&
-          y < this.height &&
+          y < that.height &&
           x >= 0 &&
-          x < this.width &&
-          this.board[y][x] === this.currPlayer
+          x < that.width &&
+          that.board[y][x] === that.currPlayer
       );
     }
 
@@ -201,15 +209,21 @@ class Player {
   constructor(color) {
     this.color = color;
   }
+  // toString() {
+  //   return `${this.color}`;
+  // }
 }
 
 document.getElementById("start-game").addEventListener("click", () => {
   let p1 = new Player(document.getElementById("p1-color").value);
   let p2 = new Player(document.getElementById("p2-color").value);
+
+  console.log("p1", p1);
+  console.log("p2", p2);
   new Game(p1, p2);
 });
 
-new Game(6, 7); // assuming constructor takes height, width
+//new Game(6, 7); // assuming constructor takes height, width
 
 // variable moved into constructor
 //// const WIDTH = 7;
